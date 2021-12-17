@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from redis import Redis
 from rq import Queue
 from jobs import job
@@ -14,12 +14,15 @@ def schedule_job():
     if params is None:
         return 'Is content-type set to application/json?', 400
 
-    queue.enqueue(job, **params)
-    return 'Queued', 204
+    j = queue.enqueue(job, **params)
+    res = {'job_id': j.id}
+
+    return jsonify(res), 202
 
 
 @app.get('/check_status/<job_id>')
 def check_status(self, job_id):
+    queue.fetch_job()
     return 200
 
 
