@@ -11,10 +11,14 @@ app = Flask(__name__)
 @app.post('/predict')
 def schedule_job():
     params = request.json
+
     if params is None:
         return 'Is content-type set to application/json?', 400
 
-    j = queue.enqueue(job, **params)
+    if 'limit' not in params:
+        return 'Missing parameter "limit"', 400
+
+    j = queue.enqueue(job, limit=params['limit'])
     res = {'job_id': j.id}
 
     return jsonify(res), 202
