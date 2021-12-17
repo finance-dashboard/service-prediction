@@ -12,7 +12,7 @@ app = Flask(__name__)
 def schedule_job():
     params = request.json
     if params is None:
-        params = {}
+        return 'Is content-type set to application/json?', 400
 
     queue.enqueue(job, **params)
     return 'Queued', 204
