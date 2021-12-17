@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from flask import Flask, request, jsonify
 from redis import Redis
+from redis.exceptions import ConnectionError
 from rq import Queue
 from jobs import job
 
@@ -18,7 +19,11 @@ def schedule_job():
     if 'limit' not in params:
         return 'Missing parameter "limit"', 400
 
-    j = queue.enqueue(job, limit=params['limit'])
+    try:
+        j = queue.enqueue(job, limit=params['limit'])
+    except ConnectionError:
+        return 'Technical issues, check back a bit later', 503
+
     res = {'job_id': j.id}
 
     return jsonify(res), 202
