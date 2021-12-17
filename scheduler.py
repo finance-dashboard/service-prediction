@@ -30,9 +30,18 @@ def schedule_job():
 
 
 @app.get('/check_status/<job_id>')
-def check_status(self, job_id):
-    queue.fetch_job()
-    return 200
+def check_status(job_id):
+    try:
+        res = queue.fetch_job(job_id)
+    except ConnectionError:
+        return 'Technical issues, check back a bit later', 503
+
+    if res is None:
+        return 'No such job', 400
+    if res.result is None:
+        return 'Still working', 202
+
+    return jsonify({'result': res.result}), 200
 
 
 if __name__ == '__main__':
