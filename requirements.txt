@@ -1,3 +1,7 @@
 rq
 Flask
 statsmodels
+grpcio
+numpy
+statsmodels
+google-api-python-client

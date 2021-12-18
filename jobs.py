@@ -1,4 +1,5 @@
 import numpy as np
+import logging
 from statsmodels.tsa.arima.model import ARIMA
 
 
@@ -9,9 +10,13 @@ def job(timeseries: np.ndarray) -> float:
     :param timeseries: currency values from some time window
     :returns: predicted value
     """
-    model = ARIMA(timeseries)
-    model.fit()
+    logging.info('Processing new request')
 
-    result = model.predict(len(timeseries) + 1)[0]
+    model = ARIMA(timeseries)
+    res = model.fit()
+
+    result = res.predict(len(timeseries) + 1)[0]
+
+    logging.info('Finished processing')
 
     return result

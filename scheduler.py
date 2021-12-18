@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
+import os
 import numpy as np
+import grpc
+import logging
+from currency_service_pb2 import TimeSlice
+from currency_service_pb2_grpc import CurrencyProviderStub
 from flask import Flask, request, jsonify
 from redis import Redis
 from redis.exceptions import ConnectionError
@@ -9,6 +14,9 @@ from jobs import job
 queue = Queue(connection=Redis())
 app = Flask(__name__)
 
+grpc_host = os.getenv('HOST', 'localhost')
+grpc_port = os.getenv('PORT', '50000')
+
 
 @app.post('/predict')
 def schedule_job():
@@ -17,14 +25,28 @@ def schedule_job():
     if params is None:
         return 'Is content-type set to application/json?', 400
 
-    for param in ['start_date', 'end_date', 'type']:
+    for param in ['start_date', 'end_date', 'code']:
         if param not in params:
             return f'Missing parameter "{param}"', 400
 
-    # TODO: get data from external provider
+    slc = TimeSlice(start=params['start_date'],
+                    end=params['end_date'],
+                    currencyCode=params['code'])
+    vals = []
+
     try:
-        # TODO: replace array stub with actual value
-        j = queue.enqueue(job, np.array([1, 2, 3, 4]))
+        with grpc.insecure_channel(f'{grpc_host}:{grpc_port}') as ch:
+            stub = CurrencyProviderStub(ch)
+            values = stub.GetCurrency(slc)
+
+            for val in values:
+                vals.append(val.value)
+    except grpc.RpcError as e:
+        logging.error(e)
+        return 'Try again later', 503
+
+    try:
+        j = queue.enqueue(job, np.array(vals))
     except ConnectionError:
         return 'Technical issues, check back a bit later', 503
 
