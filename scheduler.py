@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import numpy as np
 from flask import Flask, request, jsonify
 from redis import Redis
 from redis.exceptions import ConnectionError
@@ -16,11 +17,14 @@ def schedule_job():
     if params is None:
         return 'Is content-type set to application/json?', 400
 
-    if 'limit' not in params:
-        return 'Missing parameter "limit"', 400
+    for param in ['start_date', 'end_date', 'type']:
+        if param not in params:
+            return f'Missing parameter "{param}"', 400
 
+    # TODO: get data from external provider
     try:
-        j = queue.enqueue(job, limit=params['limit'])
+        # TODO: replace array stub with actual value
+        j = queue.enqueue(job, np.array([1, 2, 3, 4]))
     except ConnectionError:
         return 'Technical issues, check back a bit later', 503
 

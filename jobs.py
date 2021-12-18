@@ -1,11 +1,17 @@
-import time
+import numpy as np
+from statsmodels.tsa.arima.model import ARIMA
 
 
-def job(limit: int = 10) -> int:
-    counter = 0
+def job(timeseries: np.ndarray) -> float:
+    """
+    Fit ARIMA model on a specific time-series and predict next result
 
-    for i in range(limit):
-        counter += i
-        time.sleep(1)
+    :param timeseries: currency values from some time window
+    :returns: predicted value
+    """
+    model = ARIMA(timeseries)
+    model.fit()
 
-    return counter
+    result = model.predict(len(timeseries) + 1)[0]
+
+    return result
