@@ -11,11 +11,25 @@ from redis.exceptions import ConnectionError
 from rq import Queue
 from jobs import job
 
-queue = Queue(connection=Redis())
+# TODO: do not use global variables
+redis_host = os.getenv('REDIS_HOST', 'localhost')
+redis_port = os.getenv('REDIS_PORT', 6379)
+redis_password = os.getenv('REDIS_PASSWORD', None)
+
+stocks_host = os.getenv('STOCKS_HOST', 'localhost')
+stocks_port = os.getenv('STOCKS_PORT', 50000)
+
+crypto_host = os.getenv('CRYPTO_HOST', 'localhost')
+crypto_port = os.getenv('CRYPTO_PORT', 50000)
+
+dummy_host = os.getenv('DUMMY_HOST', 'localhost')
+dummy_port = os.getenv('DUMMY_PORT', 50000)
+
+queue = Queue(connection=Redis(redis_host, redis_port, redis_password))
 app = Flask(__name__)
 
-grpc_host = os.getenv('HOST', 'localhost')
-grpc_port = os.getenv('PORT', '50000')
+stocks_codes = {"TCSG", "YNDX", "SBER", "TSLA", "MOEX"}
+crypto_codes = {"BTC-USD", "ETH-USD", "XRM-USD"}
 
 
 @app.post('/predict')
@@ -33,6 +47,18 @@ def schedule_job():
                     end=params['end_date'],
                     currencyCode=params['code'])
     vals = []
+
+    if params['code'] in stocks_codes:
+        grpc_host = stocks_host
+        grpc_port = stocks_port
+    elif params['code'] in crypto_codes:
+        grpc_host = crypto_host
+        grpc_port = crypto_port
+    elif params['code'] == 'dummy':
+        grpc_host = dummy_host
+        grpc_port = dummy_port
+    else:
+        return f'Unsupported code {params["code"]}', 500
 
     try:
         with grpc.insecure_channel(f'{grpc_host}:{grpc_port}') as ch:
@@ -59,7 +85,8 @@ def schedule_job():
 def check_status(job_id):
     try:
         res = queue.fetch_job(job_id)
-    except ConnectionError:
+    except ConnectionError as e:
+        logging.error(e)
         return 'Technical issues, check back a bit later', 503
 
     if res is None:
@@ -71,4 +98,5 @@ def check_status(job_id):
 
 
 if __name__ == '__main__':
-    app.run()
+    logging.warn('Starting scheduler server')
+    app.run(host="0.0.0.0")
