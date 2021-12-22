@@ -1,0 +1,49 @@
+version: "3"
+
+x-redis-env: &redis-env
+  REDIS_HOST: "redis"
+  REDIS_PORT: 6379
+
+x-grpc-env: &grpc-env
+  DUMMY_HOST: "provider-dummy"
+  DUMMY_PORT: "50000"
+
+  STOCKS_HOST: "provider-stocks"
+  STOCKS_PORT: "9000"
+
+  CRYPTO_HOST: "provider-crypto"
+  CRYPTO_PORT: "9000"
+
+services:
+  redis:
+    image: docker.io/library/redis:6.2
+
+  worker:
+    image: docker.io/mkls0/prediction-service:0.1
+    build:
+      dockerfile: ./Dockerfile
+    command: "/app/worker.py"
+    entrypoint: "python"
+    environment:
+      <<: *redis-env
+    depends_on:
+    - redis
+
+  scheduler:
+    image: docker.io/mkls0/prediction-service:0.1
+    build:
+      dockerfile: ./Dockerfile
+    entrypoint: "python"
+    command: "/app/scheduler.py"
+    ports:
+    - "5000:5000"
+    environment:
+      <<: *redis-env
+      <<: *grpc-env
+    depends_on:
+    - provider-dummy
+    - redis
+
+  provider-dummy:
+    image: docker.io/mkls0/dummy-grpc-provider:0.1
+
