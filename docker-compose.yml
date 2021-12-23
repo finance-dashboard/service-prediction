@@ -10,9 +10,11 @@ x-grpc-env: &grpc-env
 
   STOCKS_HOST: "provider-stocks"
   STOCKS_PORT: "9000"
+  STOCKS_CODES: "TCSG;YNDX;SBER;TSLA;MOEX"
 
   CRYPTO_HOST: "provider-crypto"
   CRYPTO_PORT: "9000"
+  CRYPTO_CODES: "BTC-USD;ETH-USD;XRM-USD;BTC-RUB;ETH-RUB;XRM-RUB"
 
 services:
   redis:

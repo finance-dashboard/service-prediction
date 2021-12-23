@@ -28,8 +28,8 @@ dummy_port = os.getenv('DUMMY_PORT', 50000)
 queue = Queue(connection=Redis(redis_host, redis_port, redis_password))
 app = Flask(__name__)
 
-stocks_codes = {"TCSG", "YNDX", "SBER", "TSLA", "MOEX"}
-crypto_codes = {"BTC-USD", "ETH-USD", "XRM-USD"}
+stocks_codes = {*os.getenv("STOCKS_CODES", "").split(";")}
+crypto_codes = {*os.getenv("CRYPTO_CODES", "").split(";")}
 
 
 @app.post('/predict')
