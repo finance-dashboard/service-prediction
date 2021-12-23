@@ -5,3 +5,4 @@ grpcio
 numpy
 statsmodels
 google-api-python-client
+flask-cors

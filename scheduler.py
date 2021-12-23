@@ -6,6 +6,7 @@ import logging
 from currency_service_pb2 import TimeSlice
 from currency_service_pb2_grpc import CurrencyProviderStub
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from redis import Redis
 from redis.exceptions import ConnectionError
 from rq import Queue
@@ -27,6 +28,7 @@ dummy_port = os.getenv('DUMMY_PORT', 50000)
 
 queue = Queue(connection=Redis(redis_host, redis_port, redis_password))
 app = Flask(__name__)
+CORS(app)
 
 stocks_codes = {*os.getenv("STOCKS_CODES", "").split(";")}
 crypto_codes = {*os.getenv("CRYPTO_CODES", "").split(";")}
