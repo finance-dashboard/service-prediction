@@ -12,26 +12,23 @@ from redis.exceptions import ConnectionError
 from rq import Queue
 from jobs import job
 
+conn_strings = os.getenv('PROVIDER_CONNS', "")
+conns = {}
+
+for i in conn_strings.split(';'):
+    conn, codes = i.split('=')
+    codes = codes.split(',')
+    host, port = conn.split(':')
+    conns[host] = {'port': int(port), 'codes': set(codes)}
+
 # TODO: do not use global variables
 redis_host = os.getenv('REDIS_HOST', 'localhost')
 redis_port = os.getenv('REDIS_PORT', 6379)
 redis_password = os.getenv('REDIS_PASSWORD', None)
 
-stocks_host = os.getenv('STOCKS_HOST', 'localhost')
-stocks_port = os.getenv('STOCKS_PORT', 50000)
-
-crypto_host = os.getenv('CRYPTO_HOST', 'localhost')
-crypto_port = os.getenv('CRYPTO_PORT', 50000)
-
-dummy_host = os.getenv('DUMMY_HOST', 'localhost')
-dummy_port = os.getenv('DUMMY_PORT', 50000)
-
 queue = Queue(connection=Redis(redis_host, redis_port, redis_password))
 app = Flask(__name__)
 CORS(app)
-
-stocks_codes = {*os.getenv("STOCKS_CODES", "").split(";")}
-crypto_codes = {*os.getenv("CRYPTO_CODES", "").split(";")}
 
 
 @app.post('/predict')
@@ -39,7 +36,8 @@ def schedule_job():
     params = request.json
 
     if params is None:
-        return 'Is content-type set to application/json?', 400
+        return ('No params received. Is content-type set to application/json?',
+                400)
 
     for param in ['start_date', 'end_date', 'code']:
         if param not in params:
@@ -50,16 +48,15 @@ def schedule_job():
                     currencyCode=params['code'])
     vals = []
 
-    if params['code'] in stocks_codes:
-        grpc_host = stocks_host
-        grpc_port = stocks_port
-    elif params['code'] in crypto_codes:
-        grpc_host = crypto_host
-        grpc_port = crypto_port
-    elif params['code'] == 'dummy':
-        grpc_host = dummy_host
-        grpc_port = dummy_port
-    else:
+    grpc_host = None
+    grpc_port = None
+
+    for host, body in conns.items():
+        if params['code'] in body['codes']:
+            grpc_host = host
+            grpc_port = body['port']
+
+    if grpc_host is None or grpc_port is None:
         return f'Unsupported code {params["code"]}', 500
 
     try:

@@ -5,16 +5,7 @@ x-redis-env: &redis-env
   REDIS_PORT: 6379
 
 x-grpc-env: &grpc-env
-  DUMMY_HOST: "provider-dummy"
-  DUMMY_PORT: "50000"
-
-  STOCKS_HOST: "provider-stocks"
-  STOCKS_PORT: "9000"
-  STOCKS_CODES: "TCSG;YNDX;SBER;TSLA;MOEX"
-
-  CRYPTO_HOST: "provider-crypto"
-  CRYPTO_PORT: "9000"
-  CRYPTO_CODES: "BTC-USD;ETH-USD;XRM-USD;BTC-RUB;ETH-RUB;XRM-RUB"
+  PROVIDER_CONNS: "provider-stocks:9000=TCSG,YNDX,SBER,TSLA,MOEX;provider-crypto:9092=BTC-USD,ETH-USD,XRM-USD,BTC-RUB,ETH-RUB,XRM-RUB;provider-dummy:50000=dummy"
 
 services:
   redis:
@@ -45,6 +36,18 @@ services:
     depends_on:
     - provider-dummy
     - redis
+
+  provider-crypto:
+    image: docker.io/korpatiy/finance-dashboard-provider-crypto:v0.2.0-dev
+    environment:
+      CRYPTO_KEY: ***REMOVED***
+      CRYPTO_URI: https://api.coinbase.com/v2
+      CRYPTO_DELAY: 10000
+      CRYPTO_GRPC_PORT: 9092
+      CRYPTO_PORT: 9091
+    ports:
+      - "9091:9091"
+      - "9092:9092"
 
   provider-dummy:
     image: docker.io/mkls0/dummy-grpc-provider:0.1
