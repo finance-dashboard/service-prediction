@@ -89,7 +89,7 @@ def check_status(job_id):
         return 'Technical issues, check back a bit later', 503
 
     if res is None:
-        return 'No such job', 400
+        return 'No such job', 404
     if res.result is None:
         return 'Still working', 202
 
